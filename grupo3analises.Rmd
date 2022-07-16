@@ -1,0 +1,49 @@
+---
+title: "GRUPO3_ANALISES"
+output: html_document
+date: '2022-07-16'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r warning=F,echo=TRUE,message=F}
+#PACOTES ULTILIZADOS
+require(readODS)
+require(ggplot2)
+require(cowplot)
+require(dplyr)
+require(PMCMRplus)
+```
+
+
+
+```{r pressure, echo=FALSE}
+dados <- read_excel("C:\\Users\\Lucas\\Documents\\rscripts\\consultoria estatistica\\grupo3\\Dados.xlsx", sheet=1)
+```
+
+```{r,echo=F}
+##### mudar a variável y para ver os boxplots para outras variaveis
+dados <- arrange(dados,Grupo)
+dados['Grupo'] <- format(dados$Grupo)
+ggplot(dados, aes(x=Grupo, y=`score final`,fill=Grupo))+
+  geom_boxplot() + ggtitle("boxplots para idade por grupo")
+```
+
+
+```{r, echo=FALSE}
+modelo <- aov(dados$`Score Semantico`~dados$Grupo)
+TukeyHSD(modelo)
+```
+
+## O grupo 1 foi diferentes dos demais, o 2 e o 3 são iguais pelo teste de tukey
+
+```{r, echo=FALSE}
+kwAllPairsNemenyiTest(dados$`score final`~as.factor(dados$Grupo))$p.value
+```
+
+## O grupo 1 foi diferente dos demais, o 2 e o 3 são iguais pelo teste de nemenyi
