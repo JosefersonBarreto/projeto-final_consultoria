@@ -17,7 +17,9 @@ require(readODS)
 require(ggplot2)
 require(cowplot)
 require(dplyr)
+require(readxl)
 require(PMCMRplus)
+require(car)
 ```
 
 
@@ -26,17 +28,42 @@ require(PMCMRplus)
 dados <- read_excel("C:\\Users\\Lucas\\Documents\\rscripts\\consultoria estatistica\\grupo3\\Dados.xlsx", sheet=1)
 ```
 
+
+## Os valores faltantes foram substituidos pela média de sua respectiva variável
+
+```{r, echo=FALSE}
+dados$LV[is.na(dados$LV)]<-round(mean(dados$LV, na.rm = T),2)
+
+dados$LC[is.na(dados$LC)]<-round(mean(dados$LC, na.rm = T),2)
+
+
+dados$LD[is.na(dados$LD)]<-round(mean(dados$LD, na.rm = T),2)
+dados$LE[is.na(dados$LE)]<-round(mean(dados$LE, na.rm = T),2)
+dados$LF[is.na(dados$LF)]<-round(mean(dados$LF, na.rm = T),2)
+dados$LO[is.na(dados$LO)]<-round(mean(dados$LO, na.rm = T),2)
+
+
+dados$AC[is.na(dados$AC)]<-round(mean(dados$AC, na.rm = T),2)
+
+dados$AD[is.na(dados$AD)]<-round(mean(dados$AD, na.rm = T),2)
+
+dados$AF[is.na(dados$AF)]<-round(mean(dados$AF, na.rm = T),2)
+
+any(is.na(dados))
+```
+
+
 ```{r,echo=F}
 ##### mudar a variável y para ver os boxplots para outras variaveis
 dados <- arrange(dados,Grupo)
 dados['Grupo'] <- format(dados$Grupo)
 ggplot(dados, aes(x=Grupo, y=`score final`,fill=Grupo))+
-  geom_boxplot() + ggtitle("boxplots para idade por grupo")
+  geom_boxplot() + ggtitle("Box-Plots dos scores finais por grupo")
 ```
-
+## Fazendo o teste de tukey para verificar se há significância entre as médias dos grupos para a variável de score final
 
 ```{r, echo=FALSE}
-modelo <- aov(dados$`Score Semantico`~dados$Grupo)
+modelo <- aov(dados$`score final`~dados$Grupo)
 TukeyHSD(modelo)
 ```
 
@@ -46,4 +73,50 @@ TukeyHSD(modelo)
 kwAllPairsNemenyiTest(dados$`score final`~as.factor(dados$Grupo))$p.value
 ```
 
+
+
+
 ## O grupo 1 foi diferente dos demais, o 2 e o 3 são iguais pelo teste de nemenyi
+
+## Regressão linear para os dados do exame com o score final e com os grupos
+
+
+```{r, echo=FALSE}
+g1 <- c(rep(1,10),rep(0,20))
+g2 <- c(rep(0,10),rep(1,10),rep(0,10))
+dados <- cbind(dados,g1,g2)
+rl <- lm(`score final` ~ LA + AC + g1+g2 , data=dados)
+summary(rl)
+```
+
+### As variáveis LA e AC são estatisticamente significantes, de acordo com o teste t. A ultilização dos grupos também apresentou significância
+
+```{r, echo=FALSE}
+#plot(dados$LA, dados$`score final`)
+#abline(rl$fitted.values)
+avPlots(rl)
+```
+
+## Os resíduos para essa regressão são normais, de acordo com o teste de shapiro-wilk
+```{r, echo=FALSE}
+shapiro.test(rl$residuals)
+```
+## Relacionando os valores de latencia com o score semantico, e analisando em relacao ao grupo
+
+```{r,echo=FALSE}
+rl <- lm(`Score Semantico` ~ LA + g1+g2 , data=dados)
+summary(rl)
+```
+```{r, echo=F}
+avPlots(rl);shapiro.test(rl$residuals)
+```
+
+```{r, echo=FALSE}
+##### mudar a variável y para ver os boxplots para outras variaveis
+dados <- arrange(dados,Grupo)
+dados['Grupo'] <- format(dados$Grupo)
+ggplot(dados, aes(x=Grupo, y=`Score Semantico`,fill=Grupo))+
+  geom_boxplot() + ggtitle("Box-Plots dos scores semanticos por grupo")
+```
+
+
