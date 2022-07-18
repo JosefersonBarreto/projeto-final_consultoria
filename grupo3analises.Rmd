@@ -1,49 +1,171 @@
 ---
 title: "GRUPO3_ANALISES"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 date: '2022-07-16'
+autor: joseferson e Lucas
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## R Markdown
 
 
+## Objetivo
+
+O objetivo é avaliar identificar a associação entre as variáveis do exame e as 
+variáveis do questionário,relacionar os valores das latências, LV,LA,LD,LE,LF e L0 
+com o **Score Semântico** , entre outras questões solicitadas, para está analise foi utilizado a linguagem R e software Rstudio.
+
+
+
+<!--  Relacionar os valores das Latências LV, LA, LC, LD, LE, LF e LO com o Score Semântico, -->
+<!-- e analisar em relação o grupo. -->
+<!--  Tentar explicar o Score Final a partir das varíaveis referentes ao exame e do grupo ao qual a criança pertence. -->
+<!--  Comparar os Scores segundo o grupo. -->
+
+
+## Carregando os pacotes 
+
+Vamos iniciar carregando os pacotes que iremos utilizar 
 ```{r warning=F,echo=TRUE,message=F}
 #PACOTES ULTILIZADOS
 require(readODS)
 require(ggplot2)
 require(cowplot)
 require(dplyr)
+require(readxl)
 require(PMCMRplus)
+require(car)
 ```
 
 
+## Carregando o Banco de Dados 
 
-```{r pressure, echo=FALSE}
-dados <- read_excel("C:\\Users\\Lucas\\Documents\\rscripts\\consultoria estatistica\\grupo3\\Dados.xlsx", sheet=1)
+Vamos fazer o carregamento do banco de dados   contendo as informações sobre 30 crianças observadas 
+```{r pressure}
+dados <- read_excel("Dados.xlsx", sheet=1)
 ```
+
+# Tratamento dos dados 
+
+## Os valores faltantes foram substituidos pela média de sua respectiva variável
+
+Foram identificadas  NAS em nossa amostra, para prosseguirmos foi decidido  substituir 
+os valores ausentes por a média referente a suas respectivas colunas.
+
+```{r,}
+dados$LV[is.na(dados$LV)]<-round(mean(dados$LV, na.rm = T),2)
+
+dados$LC[is.na(dados$LC)]<-round(mean(dados$LC, na.rm = T),2)
+
+
+dados$LD[is.na(dados$LD)]<-round(mean(dados$LD, na.rm = T),2)
+dados$LE[is.na(dados$LE)]<-round(mean(dados$LE, na.rm = T),2)
+dados$LF[is.na(dados$LF)]<-round(mean(dados$LF, na.rm = T),2)
+dados$LO[is.na(dados$LO)]<-round(mean(dados$LO, na.rm = T),2)
+
+
+dados$AC[is.na(dados$AC)]<-round(mean(dados$AC, na.rm = T),2)
+
+dados$AD[is.na(dados$AD)]<-round(mean(dados$AD, na.rm = T),2)
+
+dados$AF[is.na(dados$AF)]<-round(mean(dados$AF, na.rm = T),2)
+#  verificando se ainda temos algum valor ausente 
+any(is.na(dados))
+
+#como podemos observar não temos mais nenhum NA na nossa amostra 
+```
+
+Podemos observar que agora  não temos mais nenhum NA na nossa amostra,logo, podemos prosseguir com as nossas análises 
 
 ```{r,echo=F}
 ##### mudar a variável y para ver os boxplots para outras variaveis
 dados <- arrange(dados,Grupo)
 dados['Grupo'] <- format(dados$Grupo)
 ggplot(dados, aes(x=Grupo, y=`score final`,fill=Grupo))+
-  geom_boxplot() + ggtitle("boxplots para idade por grupo")
+  geom_boxplot()  +
+    stat_summary(fun.y=mean, geom="point", shape=20, size=8, color="black", fill="red")+ ggtitle("Box-Plots dos scores finais por grupo")
 ```
 
+Pode-se observar que o grupo 3 apresenta uma maior média em relação aos demais 
+, o próximo passo, é verificar se essa diferênça é de fato significativa , paara isso , vamos utilizar o teste Tukey.
+
+
+## Fazendo o teste de tukey para verificar se há significância entre as médias dos grupos para a variável de score final
 
 ```{r, echo=FALSE}
-modelo <- aov(dados$`Score Semantico`~dados$Grupo)
+modelo <- aov(dados$`score final`~dados$Grupo)
 TukeyHSD(modelo)
 ```
 
-## O grupo 1 foi diferentes dos demais, o 2 e o 3 são iguais pelo teste de tukey
+Pelo teste Tukei tesmo que o a diferença entre o grupo 1 em relação as demais é significativa, ou seja , de fato são diferentes  , enquanto  as médias dos grupos dois e 3  são estatisticamente iguais. 
+
+
+
+<!-- ## O grupo 1 foi diferentes dos demais, o 2 e o 3 são iguais pelo teste de tukey -->
+
+
+# Testando pelo Teste  Nemenyi
 
 ```{r, echo=FALSE}
 kwAllPairsNemenyiTest(dados$`score final`~as.factor(dados$Grupo))$p.value
 ```
 
-## O grupo 1 foi diferente dos demais, o 2 e o 3 são iguais pelo teste de nemenyi
+
+
+
+ O grupo 1 foi diferente dos demais, o 2 e o 3 são iguais pelo teste de nemenyi
+
+## Regressão linear para os dados do exame com o score final e com os grupos
+agora vamos construir um modelo  de regresão linear para tentar explicar o **score final** (nossa variavel predizida) atravez de nossas variáveis preditoras 
+
+
+```{r, echo=FALSE}
+g1 <- c(rep(1,10),rep(0,20))
+g2 <- c(rep(0,10),rep(1,10),rep(0,10))
+dados <- cbind(dados,g1,g2)
+rl <- lm(`score final` ~ LA + AC + g1+g2 , data=dados)
+summary(rl)
+```
+
+ As variáveis LA e AC são estatisticamente significantes, de acordo com o teste t. A ultilização dos grupos também apresentou significância
+
+```{r, echo=FALSE}
+#plot(dados$LA, dados$`score final`)
+#abline(rl$fitted.values)
+avPlots(rl)
+```
+
+## Teste de Normalidade Shapiro Wilk 
+
+* Hipótestes do teste 
+
+$H_0:$ os residuos são normais $p\geq 0,05$
+$H_1:$ os residuos não são normais $p < 0,05$
+
+
+```{r, echo=FALSE}
+shapiro.test(rl$residuals)
+```
+
+ De acordo com  o teste shapiro-wilk  a 5% de significância Os resíduos para essa regressão são normais
+ 
+ 
+## Relacionando os Valores de Latencia Com o Score Semântico, e Analisando em Relação ao Grupo
+
+```{r,echo=FALSE}
+rl <- lm(`Score Semantico` ~ LA + g1+g2 , data=dados)
+summary(rl)
+```
+```{r, echo=F}
+avPlots(rl);shapiro.test(rl$residuals)
+```
+
+```{r, echo=FALSE}
+##### mudar a variável y para ver os boxplots para outras variaveis
+dados <- arrange(dados,Grupo)
+dados['Grupo'] <- format(dados$Grupo)
+ggplot(dados, aes(x=Grupo, y=`Score Semantico`,fill=Grupo))+
+  geom_boxplot() + ggtitle("Box-Plots dos scores semanticos por grupo")
+```
+
+
