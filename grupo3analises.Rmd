@@ -9,6 +9,17 @@ autor: joseferson e Lucas
 
 
 
+# Sumário 
+
+
+* Objetivo 
+
+*  Metodos 
+
+*  Resultados 
+
+*  Conclusão
+
 ## Objetivo
 
 O objetivo é avaliar identificar a associação entre as variáveis do exame e as 
@@ -17,6 +28,12 @@ com o **Score Semântico** , entre outras questões solicitadas, para está anal
 
 
 
+## Metodo
+
+ Foi Feito a Análise exploratória e os tratamentos dos dados para buscar relações entre as variáveis , a  limpeza dos dados foi feita no software Rstudio ,utilizando a linguagem R para as demais análises. Iniciamos o tratamentos dos  dados subtituíndo nas  variavéis quantitativas onde tinha valores ausentes  colocamos os valores da média de cada variavel respectivamente , em seguidas foi feito alguns boxplot com o objetivo de 
+ observar principalmente o comportamento da média e mediana , por fim foi criado um modelo de regresão,executamos o teste tukey , criamos alguns gráficos para observar o comportamento dos residuos .
+ 
+ 
 <!--  Relacionar os valores das Latências LV, LA, LC, LD, LE, LF e LO com o Score Semântico, -->
 <!-- e analisar em relação o grupo. -->
 <!--  Tentar explicar o Score Final a partir das varíaveis referentes ao exame e do grupo ao qual a criança pertence. -->
@@ -156,7 +173,8 @@ shapiro.test(rl$residuals)
 rl <- lm(`Score Semantico` ~ LA + g1+g2 , data=dados)
 summary(rl)
 ```
-```{r, echo=F}
+após a elaboração do segundo modelo percebemos que apenas  **g1** foi significativo , LA e g2  podem ou não continuar no modelo ,ficando a critério de debate a remoção ou não .
+```{r}
 avPlots(rl);shapiro.test(rl$residuals)
 ```
 
